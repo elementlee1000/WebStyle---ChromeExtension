@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Style</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="header-left">
+      <span class="app-icon">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="12" height="8" stroke="white" stroke-width="1.5" fill="none"/>
+          <rect x="1" y="7.5" width="12" height="1.5" fill="white"/>
+          <rect x="5" y="10" width="4" height="1.5" fill="white"/>
+          <rect x="3.5" y="9" width="7" height="1" fill="white"/>
+        </svg>
+      </span>
+      <span class="app-title">Web Style</span>
+    </div>
+    <label class="header-enable" title="Enable / Disable">
+      <input type="checkbox" id="enabled">
+      <span>Enable</span>
+    </label>
+  </header>
+
+  <div id="body" class="body">
+
+    <!-- Site -->
+    <section class="site-section">
+      <div class="section-title">Site</div>
+      <div class="form-row">
+        <label class="row-label">Current</label>
+        <div class="color-field">
+          <input type="checkbox" id="siteDisabled" class="color-cb">
+          <span>Disable on this site</span>
+        </div>
+      </div>
+      <div id="site-status" class="action-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- Dark Mode -->
+    <section>
+      <div class="section-title">Dark Mode</div>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="darkMode" value="off">
+          <span>Off</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="darkMode" value="smartdark">
+          <span>Smart Dark</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="darkMode" value="dim">
+          <span>Dim</span>
+        </label>
+      </div>
+      <div id="smartdark-opts" class="form-row dark-mode-opt hidden">
+        <label class="row-label">Contrast</label>
+        <div class="size-field">
+          <input type="range" id="smartDarkContrast" min="0" max="100" value="75" step="1">
+          <code id="smartDarkContrastLabel" class="hex-label">75</code>
+        </div>
+      </div>
+      <div id="dim-opts" class="form-row dark-mode-opt hidden">
+        <label class="row-label">Amount</label>
+        <div class="size-field">
+          <input type="range" id="dimAmount" min="0" max="90" value="30" step="5">
+          <code id="dimAmountLabel" class="hex-label">30%</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Media -->
+    <section class="media-section">
+      <div class="section-title">Media</div>
+      <div class="form-row">
+        <label class="row-label">Videos</label>
+        <div class="color-field">
+          <input type="checkbox" id="pauseVideosEnabled" class="color-cb">
+          <span>Pause automatically</span>
+        </div>
+      </div>
+      <div id="pause-videos-status" class="action-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- Colors -->
+    <section>
+      <div class="section-title">Colors</div>
+      <div class="form-row">
+        <label class="row-label">Background</label>
+        <div class="color-field">
+          <input type="checkbox" id="bgEnabled" class="color-cb">
+          <input type="color" id="backgroundColor" value="#ffffff">
+          <code id="bgHex" class="hex-label">#ffffff</code>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="row-label">Text</label>
+        <div class="color-field">
+          <input type="checkbox" id="textEnabled" class="color-cb">
+          <input type="color" id="textColor" value="#000000">
+          <code id="textHex" class="hex-label">#000000</code>
+        </div>
+      </div>
+      <div class="swap-row">
+        <button id="swap-colors-btn" class="btn-ghost btn-sm">⇅ Swap</button>
+      </div>
+    </section>
+
+    
+
+   
+
+    <!-- CSS Libraries -->
+    <section>
+      <div class="section-title">CSS Libraries</div>
+      <div id="library-list" class="library-list"></div>
+      <button id="add-lib-btn" class="add-btn">+ Add Library</button>
+      <div id="add-lib-form" class="add-form hidden">
+        <input type="text" id="new-lib-name" placeholder="Name">
+        <input type="url" id="new-lib-url" placeholder="CSS URL (https://...)">
+        <div class="add-form-btns">
+          <button id="confirm-add" class="btn-primary">Add</button>
+          <button id="cancel-add" class="btn-ghost">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chaos Settings -->
+    <section id="chaos-settings">
+      <div class="section-title">Chaos</div>
+      <div class="form-row">
+        <label class="row-label">Intensity</label>
+        <div class="size-field">
+          <input type="range" id="chaosIntensity" min="0" max="100" value="50" step="1">
+          <code id="chaosIntensityLabel" class="hex-label">50</code>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="row-label">Border</label>
+        <div class="size-field">
+          <input type="range" id="chaosBorderWidth" min="1" max="4" value="2" step="1">
+          <code id="chaosBorderWidthLabel" class="hex-label">2px</code>
+        </div>
+      </div>
+    </section>
+
+     <!-- Global Radius -->
+    <section>
+      <div class="section-title">Radius</div>
+      <div class="form-row">
+        <label class="row-label">Enable</label>
+        <div class="color-field">
+          <input type="checkbox" id="globalRadiusEnabled" class="color-cb">
+          <span>On / Off</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="row-label">Value</label>
+        <div class="size-field">
+          <input type="range" id="globalRadius" min="0" max="48" value="8" step="1">
+          <code id="globalRadiusLabel" class="hex-label">8px</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Font -->
+    <section>
+      <div class="section-title">Font</div>
+      <div class="form-row">
+        <label class="row-label">Family</label>
+        <div class="font-field">
+          <input type="checkbox" id="fontFamilyEnabled" class="color-cb">
+          <input type="text" id="fontFamily" list="font-list" placeholder="Arial, sans-serif">
+        </div>
+      </div>
+      <datalist id="font-list">
+        <option value="system-ui, sans-serif">
+        <option value="Arial, sans-serif">
+        <option value="'Helvetica Neue', Arial, sans-serif">
+        <option value="Georgia, serif">
+        <option value="'Times New Roman', serif">
+        <option value="'Courier New', monospace">
+        <option value="'Segoe UI', sans-serif">
+        <option value="Verdana, sans-serif">
+        <option value="'Comic Sans MS', cursive">
+      </datalist>
+      <div class="form-row">
+        <label class="row-label">Size</label>
+        <div class="size-field">
+          <input type="checkbox" id="fontSizeEnabled" class="color-cb">
+          <input type="range" id="fontSize" min="8" max="32" value="16" step="1">
+          <code id="fontSizeLabel" class="hex-label">16px</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Custom CSS -->
+    <section>
+      <div class="section-title">Custom CSS</div>
+      <textarea id="customCSS" class="css-editor" spellcheck="false"
+        placeholder="/* Your CSS here */&#10;body { background: #fff; }"></textarea>
+    </section>
+
+  </div>
+
+  <footer>
+    <button id="reset-btn" class="btn-ghost btn-sm">Reset All</button>
+  </footer>
+
+</div>
+<script src="popup.js"></script>
+</body>
+</html>

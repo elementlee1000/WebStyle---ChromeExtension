@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\EL_Drive\\\\0EL\\\\AI\\\\VibeCoding\\\\WebTheme - ChromeExtension\" -Recurse)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:darkreader.org)"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Icons</title></head>
+<body>
+<p>Click button to download PNG icons for the extension.</p>
+<button onclick="generateAll()">Generate & Download All Icons</button>
+<canvas id="c" style="display:none"></canvas>
+<script>
+function drawIcon(size) {
+  const canvas = document.getElementById('c');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createLinearGradient(0, 0, size, 0);
+  grad.addColorStop(0, '#000080');
+  grad.addColorStop(1, '#cfcfcf');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+}
+
+function download(size) {
+  drawIcon(size);
+  const a = document.createElement('a');
+  a.download = `icon${size}.png`;
+  a.href = document.getElementById('c').toDataURL('image/png');
+  a.click();
+}
+
+function generateAll() {
+  [16, 48, 128].forEach((s, i) => setTimeout(() => download(s), i * 300));
+}
+</script>
+</body>
+</html>

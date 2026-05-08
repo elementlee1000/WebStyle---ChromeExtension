@@ -1,10 +1,13 @@
 const DEFAULT_LIBRARIES = [
-  { id: 'win7-glass', name: 'Win7 Glass', url: '',                                                          enabled: false, builtin: true, description: 'Aero glass, blue chrome, translucent panels' },
-  { id: 'system-css', name: 'system.css', url: '',                                                          enabled: false, builtin: true, description: 'Classic Mac OS windows, stripes, square controls' },
-  { id: 'xp-css',    name: 'XP.css',     url: '',                                                          enabled: false, builtin: true, description: 'Windows XP Luna blue title bars and beige panels' },
-  { id: '98-css',    name: '98.css',     url: 'https://cdn.jsdelivr.net/npm/98.css',                      enabled: false, builtin: true, description: 'Windows 98 UI theme' },
-  { id: 'chaos',    name: 'Chaos',      url: '',                                                          enabled: false, builtin: true, description: '残垣断壁 · 荒原乱序' },
-  { id: 'pet-terminal', name: 'PET Terminal', url: '',                                                     enabled: false, builtin: true, description: 'Black screen, green phosphor text, ASCII controls' },
+  { id: '98-css',   name: 'win98',      url: '',                                                          enabled: false, builtin: true, description: 'Windows 98' },
+  { id: 'pet-terminal', name: 'PET Terminal', url: '',                                                     enabled: false, builtin: true,  },
+  { id: 'win7-glass', name: 'Win7 Glass', url: '',                                                          enabled: false, builtin: true,  },
+  { id: 'system-css', name: 'system.css', url: '',                                                          enabled: false, builtin: true,  },
+  { id: 'xp-css',   name: 'XP.css',     url: '',                                                          enabled: false, builtin: true,  },
+  { id: 'mac-osx',   name: 'Mac OS X',   url: '',                                                          enabled: false, builtin: true, },
+  { id: 'woodblock-css', name: 'Woodblock Print', url: '',                                                 enabled: false, builtin: true },
+  { id: 'lcd',          name: 'LCD',             url: '',                                                 enabled: false, builtin: true, description: 'LCD display: sage green bg, dark brown text' }
+
 ];
 
 const DEFAULTS = {
@@ -18,17 +21,49 @@ const DEFAULTS = {
   globalRadius: 8,
   customCSS: '',
   cssLibraries: DEFAULT_LIBRARIES,
-  chaosIntensity: 50,
-  chaosBorderWidth: 2,
+  chaosIntensity: 0,
   smartDarkContrast: 75,
   dimAmount: 30,
+  pageFlipEnabled: false,
+  treeStructureEnabled: false,
+  petTerminalFilterMedia: true,
+  petTerminalNoGlow: false,
+  lcdFilterMedia: false,
   pauseVideosEnabled: false,
   disabledSites: [],
+  siteSettings: {},
 };
+
+/* ── Per-site settings keys ──────────────── */
+const SITE_KEYS = new Set([
+  'darkMode','smartDarkContrast','dimAmount',
+  'bgEnabled','backgroundColor','textEnabled','textColor',
+  'fontFamilyEnabled','fontFamily','fontSizeEnabled','fontSize',
+  'globalRadiusEnabled','globalRadius',
+  'customCSS','chaosIntensity',
+  'pageFlipEnabled','treeStructureEnabled',
+  'petTerminalFilterMedia','petTerminalNoGlow','lcdFilterMedia',
+  'pauseVideosEnabled',
+  'cssLibraries',
+]);
+
+function extractSiteSettings(src) {
+  const s = {};
+  SITE_KEYS.forEach(k => { s[k] = src[k]; });
+  return s;
+}
+
+function effectiveState() {
+  if (siteOnlyActive && currentSite && state.siteSettings?.[currentSite]) {
+    return { ...state, ...state.siteSettings[currentSite] };
+  }
+  return state;
+}
 
 let state = { ...DEFAULTS };
 let saveTimer = null;
 let currentSite = null;
+let siteOnlyActive = false;
 
 function mergeLibraries(libraries = []) {
   const byId = new Map(libraries.map(lib => [lib.id, lib]));
@@ -50,18 +85,37 @@ function loadSettings() {
       if (!Array.isArray(result.disabledSites)) {
         result.disabledSites = [];
       }
+      if (!result.siteSettings || typeof result.siteSettings !== 'object' || Array.isArray(result.siteSettings)) {
+        result.siteSettings = {};
+      }
       resolve(result);
     });
   });
 }
 
 function saveNow(updates = {}) {
-  Object.assign(state, updates);
+  if (siteOnlyActive && currentSite) {
+    if (!state.siteSettings[currentSite]) state.siteSettings[currentSite] = {};
+    for (const [k, v] of Object.entries(updates)) {
+      if (SITE_KEYS.has(k)) state.siteSettings[currentSite][k] = v;
+      else state[k] = v;
+    }
+  } else {
+    Object.assign(state, updates);
+  }
   chrome.storage.sync.set(state);
 }
 
 function saveDebounced(updates = {}) {
-  Object.assign(state, updates);
+  if (siteOnlyActive && currentSite) {
+    if (!state.siteSettings[currentSite]) state.siteSettings[currentSite] = {};
+    for (const [k, v] of Object.entries(updates)) {
+      if (SITE_KEYS.has(k)) state.siteSettings[currentSite][k] = v;
+      else state[k] = v;
+    }
+  } else {
+    Object.assign(state, updates);
+  }
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => chrome.storage.sync.set(state), 400);
 }
@@ -109,7 +163,7 @@ function updateSiteStatus() {
 function updateVideoPauseStatus() {
   const el = document.getElementById('pause-videos-status');
   if (!el) return;
-  el.textContent = state.pauseVideosEnabled
+  el.textContent = effectiveState().pauseVideosEnabled
     ? 'New videos stay paused until you click the video.'
     : '';
 }
@@ -120,7 +174,7 @@ function renderLibraries() {
   const list = document.getElementById('library-list');
   list.innerHTML = '';
 
-  state.cssLibraries.forEach(lib => {
+  effectiveState().cssLibraries.forEach(lib => {
     const item = document.createElement('div');
     item.className = 'lib-item';
 
@@ -129,11 +183,11 @@ function renderLibraries() {
     cb.className = 'lib-toggle';
     cb.checked = lib.enabled;
     cb.addEventListener('change', () => {
-      if (cb.checked) {
-        state.cssLibraries.forEach(l => { l.enabled = false; });
-      }
-      lib.enabled = cb.checked;
-      saveNow();
+      const newLibraries = state.cssLibraries.map(l => ({
+        ...l,
+        enabled: cb.checked && l.id === lib.id
+      }));
+      saveNow({ cssLibraries: newLibraries });
       renderLibraries();
       updateChaosSettingsVisibility();
     });
@@ -152,6 +206,11 @@ function renderLibraries() {
       del.textContent = '✕';
       del.addEventListener('click', () => {
         state.cssLibraries = state.cssLibraries.filter(l => l.id !== lib.id);
+        for (const site of Object.keys(state.siteSettings || {})) {
+          if (Array.isArray(state.siteSettings[site]?.cssLibraries)) {
+            state.siteSettings[site].cssLibraries = state.siteSettings[site].cssLibraries.filter(l => l.id !== lib.id);
+          }
+        }
         saveNow();
         renderLibraries();
       });
@@ -166,72 +225,107 @@ function renderLibraries() {
 
 function applyStateToUI() {
   const $ = id => document.getElementById(id);
+  const eff = effectiveState();
 
   $('enabled').checked = state.enabled;
   document.getElementById('body').classList.toggle('disabled', !state.enabled);
   updateSiteStatus();
-  $('pauseVideosEnabled').checked = state.pauseVideosEnabled;
+  $('pauseVideosEnabled').checked = eff.pauseVideosEnabled;
   updateVideoPauseStatus();
 
   document.querySelectorAll('input[name=darkMode]').forEach(r => {
-    r.checked = r.value === state.darkMode;
+    r.checked = r.value === eff.darkMode;
   });
 
-  $('bgEnabled').checked = state.bgEnabled;
-  $('backgroundColor').value = state.backgroundColor;
-  $('backgroundColor').disabled = !state.bgEnabled;
-  $('bgHex').textContent = state.backgroundColor;
+  $('bgEnabled').checked = eff.bgEnabled;
+  $('backgroundColor').value = eff.backgroundColor;
+  $('bgHex').textContent = eff.backgroundColor;
 
-  $('textEnabled').checked = state.textEnabled;
-  $('textColor').value = state.textColor;
-  $('textColor').disabled = !state.textEnabled;
-  $('textHex').textContent = state.textColor;
+  $('textEnabled').checked = eff.textEnabled;
+  $('textColor').value = eff.textColor;
+  $('textHex').textContent = eff.textColor;
 
-  $('fontFamilyEnabled').checked = state.fontFamilyEnabled;
-  $('fontFamily').value = state.fontFamily;
-  $('fontFamily').disabled = !state.fontFamilyEnabled;
+  $('fontFamilyEnabled').checked = eff.fontFamilyEnabled;
+  $('fontFamily').value = eff.fontFamily;
+  $('fontFamily').disabled = !eff.fontFamilyEnabled;
 
-  $('fontSizeEnabled').checked = state.fontSizeEnabled;
-  $('fontSize').value = state.fontSize;
-  $('fontSize').disabled = !state.fontSizeEnabled;
-  $('fontSizeLabel').textContent = state.fontSize + 'px';
+  $('fontSizeEnabled').checked = eff.fontSizeEnabled;
+  $('fontSize').value = eff.fontSize;
+  $('fontSize').disabled = !eff.fontSizeEnabled;
+  $('fontSizeLabel').textContent = eff.fontSize + 'px';
 
-  $('globalRadiusEnabled').checked = state.globalRadiusEnabled;
-  $('globalRadius').value = state.globalRadius;
-  $('globalRadius').disabled = !state.globalRadiusEnabled;
-  $('globalRadiusLabel').textContent = state.globalRadius + 'px';
-  $('customCSS').value = state.customCSS;
+  $('globalRadiusEnabled').checked = eff.globalRadiusEnabled;
+  $('globalRadius').value = eff.globalRadius;
+  $('globalRadius').disabled = !eff.globalRadiusEnabled;
+  $('globalRadiusLabel').textContent = eff.globalRadius + 'px';
+  $('customCSS').value = eff.customCSS;
 
-  $('chaosIntensity').value = state.chaosIntensity;
-  $('chaosIntensityLabel').textContent = state.chaosIntensity;
-  $('chaosBorderWidth').value = state.chaosBorderWidth;
-  $('chaosBorderWidthLabel').textContent = state.chaosBorderWidth + 'px';
+  $('chaosIntensity').value = eff.chaosIntensity;
+  $('chaosIntensityLabel').textContent = eff.chaosIntensity;
 
-  $('smartDarkContrast').value = state.smartDarkContrast;
-  $('smartDarkContrastLabel').textContent = state.smartDarkContrast;
-  $('dimAmount').value = state.dimAmount;
-  $('dimAmountLabel').textContent = state.dimAmount + '%';
+  $('smartDarkContrast').value = eff.smartDarkContrast;
+  $('smartDarkContrastLabel').textContent = eff.smartDarkContrast;
+  $('dimAmount').value = eff.dimAmount;
+  $('dimAmountLabel').textContent = eff.dimAmount + '%';
   updateDarkModeOpts();
+
+  const pfToggle = $('pageFlipEnabled');
+  if (pfToggle) pfToggle.checked = eff.pageFlipEnabled;
+
+  const tsToggle = $('treeStructureEnabled');
+  if (tsToggle) tsToggle.checked = eff.treeStructureEnabled;
+
+  $('petTerminalFilterMedia').checked = eff.petTerminalFilterMedia !== false;
+  $('petTerminalNoGlow').checked = eff.petTerminalNoGlow === true;
+  $('lcdFilterMedia').checked = eff.lcdFilterMedia === true;
 
   renderLibraries();
   updateChaosSettingsVisibility();
+  updateSiteOnlyUI();
 }
 
 function updateDarkModeOpts() {
-  const m = state.darkMode;
+  const m = effectiveState().darkMode;
   document.getElementById('smartdark-opts').classList.toggle('hidden', m !== 'smartdark');
   document.getElementById('dim-opts').classList.toggle('hidden', m !== 'dim');
 }
 
+function updateSiteOnlyUI() {
+  const cb = document.getElementById('siteOnly');
+  const status = document.getElementById('site-status');
+  if (!cb) return;
+  cb.disabled = !currentSite;
+  cb.checked = siteOnlyActive;
+  if (!status) return;
+  if (siteOnlyActive && currentSite) {
+    status.textContent = `Site: ${currentSite}`;
+    status.classList.add('site-active');
+  } else {
+    status.classList.remove('site-active');
+  }
+}
+
 function updateChaosSettingsVisibility() {
-  const chaosActive = (state.cssLibraries || []).some(lib => lib.id === 'chaos' && lib.enabled);
-  document.getElementById('chaos-settings').classList.toggle('hidden', !chaosActive);
+  /* always visible — intensity now affects all modes */
 }
 
 /* ── Bind all events ─────────────────────── */
 
 function bindEvents() {
   const $ = id => document.getElementById(id);
+
+  $('siteOnly').addEventListener('change', e => {
+    if (!currentSite) { e.target.checked = false; return; }
+    siteOnlyActive = e.target.checked;
+    if (siteOnlyActive) {
+      if (!state.siteSettings) state.siteSettings = {};
+      state.siteSettings[currentSite] = extractSiteSettings(state);
+    } else {
+      if (state.siteSettings) delete state.siteSettings[currentSite];
+    }
+    chrome.storage.sync.set(state);
+    applyStateToUI();
+  });
 
   $('siteDisabled').addEventListener('change', e => {
     if (!currentSite) {
@@ -263,9 +357,8 @@ function bindEvents() {
   /* Dark mode */
   document.querySelectorAll('input[name=darkMode]').forEach(r => {
     r.addEventListener('change', () => {
-      state.darkMode = r.value;
-      updateDarkModeOpts();
       saveNow({ darkMode: r.value });
+      updateDarkModeOpts();
     });
   });
 
@@ -283,7 +376,6 @@ function bindEvents() {
 
   /* Background color */
   $('bgEnabled').addEventListener('change', e => {
-    $('backgroundColor').disabled = !e.target.checked;
     saveNow({ bgEnabled: e.target.checked });
   });
   $('backgroundColor').addEventListener('input', e => {
@@ -293,7 +385,6 @@ function bindEvents() {
 
   /* Text color */
   $('textEnabled').addEventListener('change', e => {
-    $('textColor').disabled = !e.target.checked;
     saveNow({ textEnabled: e.target.checked });
   });
   $('textColor').addEventListener('input', e => {
@@ -367,9 +458,10 @@ function bindEvents() {
     if (!name || !url) return;
 
     const id = 'custom-' + Date.now();
-    const lib = { id, name, url, enabled: true, builtin: false, description: url };
+    const lib = { id, name, url, enabled: false, builtin: false, description: url };
     state.cssLibraries = [...state.cssLibraries, lib];
-    saveNow();
+    const newLibraries = state.cssLibraries.map(l => ({ ...l, enabled: l.id === id }));
+    saveNow({ cssLibraries: newLibraries });
     renderLibraries();
     updateChaosSettingsVisibility();
 
@@ -385,16 +477,39 @@ function bindEvents() {
     $('chaosIntensityLabel').textContent = v;
     saveDebounced({ chaosIntensity: v });
   });
-  $('chaosBorderWidth').addEventListener('input', e => {
-    const v = parseInt(e.target.value, 10);
-    $('chaosBorderWidthLabel').textContent = v + 'px';
-    saveDebounced({ chaosBorderWidth: v });
+
+  /* Terminal settings */
+  $('petTerminalFilterMedia').addEventListener('change', e => {
+    saveNow({ petTerminalFilterMedia: e.target.checked });
   });
+
+  $('petTerminalNoGlow').addEventListener('change', e => {
+    saveNow({ petTerminalNoGlow: e.target.checked });
+  });
+
+  $('lcdFilterMedia').addEventListener('change', e => {
+    saveNow({ lcdFilterMedia: e.target.checked });
+  });
+
+  const pfToggle2 = $('pageFlipEnabled');
+  if (pfToggle2) {
+    pfToggle2.addEventListener('change', e => {
+      saveNow({ pageFlipEnabled: e.target.checked });
+    });
+  }
+
+  const tsToggle = $('treeStructureEnabled');
+  if (tsToggle) {
+    tsToggle.addEventListener('change', e => {
+      saveNow({ treeStructureEnabled: e.target.checked });
+    });
+  }
 
   /* Reset */
   $('reset-btn').addEventListener('click', () => {
     if (!confirm('Reset all settings to defaults?')) return;
     state = { ...DEFAULTS };
+    siteOnlyActive = false;
     chrome.storage.sync.set(state);
     applyStateToUI();
   });
@@ -404,6 +519,7 @@ function bindEvents() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   [state, currentSite] = await Promise.all([loadSettings(), loadCurrentSite()]);
+  siteOnlyActive = !!(currentSite && state.siteSettings?.[currentSite]);
   applyStateToUI();
   bindEvents();
 });

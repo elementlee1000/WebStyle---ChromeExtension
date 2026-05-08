@@ -39,6 +39,13 @@
           <span>Disable on this site</span>
         </div>
       </div>
+      <div class="form-row">
+        <label class="row-label"></label>
+        <div class="color-field">
+          <input type="checkbox" id="siteOnly" class="color-cb">
+          <span>ONLY on this site</span>
+        </div>
+      </div>
       <div id="site-status" class="action-status" role="status" aria-live="polite"></div>
     </section>
 
@@ -53,6 +60,10 @@
         <label class="radio-option">
           <input type="radio" name="darkMode" value="smartdark">
           <span>Smart Dark</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="darkMode" value="lightmode">
+          <span>Light</span>
         </label>
         <label class="radio-option">
           <input type="radio" name="darkMode" value="dim">
@@ -82,7 +93,8 @@
         <label class="row-label">Videos</label>
         <div class="color-field">
           <input type="checkbox" id="pauseVideosEnabled" class="color-cb">
-          <span>Pause automatically</span>
+          <span>Stop Videos
+          </span>
         </div>
       </div>
       <div id="pause-videos-status" class="action-status" role="status" aria-live="polite"></div>
@@ -131,21 +143,59 @@
       </div>
     </section>
 
-    <!-- Chaos Settings -->
-    <section id="chaos-settings">
-      <div class="section-title">Chaos</div>
+    <!-- LCD Settings -->
+    <section>
+      <div class="section-title">LCD</div>
       <div class="form-row">
-        <label class="row-label">Intensity</label>
-        <div class="size-field">
-          <input type="range" id="chaosIntensity" min="0" max="100" value="50" step="1">
-          <code id="chaosIntensityLabel" class="hex-label">50</code>
+        <label class="row-label">Media</label>
+        <div class="color-field">
+          <input type="checkbox" id="lcdFilterMedia" class="color-cb">
+          <span>Color filter</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Terminal Settings -->
+    <section>
+      <div class="section-title">Terminal</div>
+      <div class="form-row">
+        <label class="row-label">Media</label>
+        <div class="color-field">
+          <input type="checkbox" id="petTerminalFilterMedia" class="color-cb">
+          <span>Apply color filter</span>
         </div>
       </div>
       <div class="form-row">
-        <label class="row-label">Border</label>
+        <label class="row-label">Glow</label>
+        <div class="color-field">
+          <input type="checkbox" id="petTerminalNoGlow" class="color-cb">
+          <span>Remove glow effect</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Effects Settings -->
+    <section id="effects-settings">
+      <div class="section-title">Effects</div>
+      <div class="form-row">
+        <label class="row-label">Page Flip</label>
+        <div class="color-field">
+          <input type="checkbox" id="pageFlipEnabled" class="color-cb">
+          <span>Horizontal Pages ← →</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="row-label">Tree Map</label>
+        <div class="color-field">
+          <input type="checkbox" id="treeStructureEnabled" class="color-cb">
+          <span>ASCII Structure</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="row-label">Chaos Scatter</label>
         <div class="size-field">
-          <input type="range" id="chaosBorderWidth" min="1" max="4" value="2" step="1">
-          <code id="chaosBorderWidthLabel" class="hex-label">2px</code>
+          <input type="range" id="chaosIntensity" min="0" max="100" value="0" step="1">
+          <code id="chaosIntensityLabel" class="hex-label">0</code>
         </div>
       </div>
     </section>

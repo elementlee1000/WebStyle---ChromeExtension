@@ -13,7 +13,8 @@ body {
 
 /* ── Win95 title bar ─────────────────────── */
 header {
-  background: linear-gradient(90deg, #000080 0%, #cfcfcf 100%);
+  background: #000;
+  /* linear-gradient(90deg, #000 0%, #cfcfcf 100%) */
   color: #fff;
   padding: 3px 4px 3px 6px;
   display: flex;
@@ -54,19 +55,24 @@ header {
 /* ── GroupBox sections ───────────────────── */
 section {
   position: relative;
-  border: 2px solid;
-  border-color: #808080 #dfdfdf #dfdfdf #808080;
-  padding: 16px 10px 10px;
-  margin-bottom: 8px;
+  border: none;
+  border-bottom: 1px solid #808080;
+  box-shadow: 0 1px 0 #ffffff;
+  padding: 4px 10px 16px;
+  margin-bottom: 12px;
 }
-section:last-child { margin-bottom: 0; }
+section:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+  box-shadow: none;
+  padding-bottom: 4px;
+}
 
 .section-title {
-  position: absolute;
-  top: -8px;
-  left: 8px;
-  background: #c0c0c0;
-  padding: 0 4px;
+  position: static;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 10px;
   font-size: 12px;
   font-weight: bold;
   color: #000;
@@ -152,7 +158,7 @@ input[type=radio]:checked::after {
 .color-field input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
 .color-field input[type=color]::-webkit-color-swatch { border: none; }
 .color-field input[type=color]:disabled { opacity: 1; cursor: not-allowed; }
-.hex-label { font-size: 11px; color: #000; font-family: 'Courier New', monospace; }
+.hex-label { font-size: 13px; color: #000; font-family: 'Courier New', monospace; }
 
 /* Font field */
 .font-field { display: flex; align-items: center; gap: 6px; flex: 1; }
@@ -256,6 +262,10 @@ input[type=radio]:checked::after {
   margin-top: 5px;
   font-size: 11px;
   color: #000080;
+}
+.action-status.site-active {
+  font-weight: bold;
+  color: #800000;
 }
 
 /* ── Swap row ────────────────────────────── */

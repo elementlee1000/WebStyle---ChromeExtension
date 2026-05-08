@@ -1,5 +1,23 @@
 const DEFAULT_LIBRARIES = [
   {
+    id: '98-css',
+    name: 'win98',
+    url: 'https://cdn.jsdelivr.net/npm/98.css',
+    enabled: false,
+    builtin: true,
+    description: '相约98'
+  },
+  
+  {
+    id: 'pet-terminal',
+    name: 'PET Terminal',
+    url: '',
+    enabled: false,
+    builtin: true,
+    description: 'Black screen, green phosphor text, ASCII controls'
+  },
+  
+  {
     id: 'win7-glass',
     name: 'Win7 Glass',
     url: '',
@@ -15,6 +33,7 @@ const DEFAULT_LIBRARIES = [
     builtin: true,
     description: 'Classic Mac OS windows, stripes, square controls'
   },
+  
   {
     id: 'xp-css',
     name: 'XP.css',
@@ -24,29 +43,30 @@ const DEFAULT_LIBRARIES = [
     description: 'Windows XP Luna blue title bars and beige panels'
   },
   {
-    id: '98-css',
-    name: '98.css',
-    url: 'https://cdn.jsdelivr.net/npm/98.css',
-    enabled: false,
-    builtin: true,
-    description: '相约98'
-  },
-  {
-    id: 'chaos',
-    name: 'Chaos',
+    id: 'mac-osx',
+    name: 'Mac OS X',
     url: '',
     enabled: false,
     builtin: true,
-    description: '残垣断壁 · 荒原乱序'
+    description: 'Classic OS X Aqua interface, glossy buttons, pinstripes'
   },
   {
-    id: 'pet-terminal',
-    name: 'PET Terminal',
+    id: 'woodblock-css',
+    name: 'Woodblock Print',
     url: '',
     enabled: false,
     builtin: true,
-    description: 'Black screen, green phosphor text, ASCII controls'
+    description: '仿木刻古籍，水墨晕染与不规则边缘'
+  },
+  {
+    id: 'lcd',
+    name: 'LCD',
+    url: '',
+    enabled: false,
+    builtin: true,
+    description: 'LCD display: sage green bg, dark brown text'
   }
+
 ];
 
 const DEFAULTS = {
@@ -62,12 +82,17 @@ const DEFAULTS = {
   fontSize: 16,
   customCSS: '',
   cssLibraries: DEFAULT_LIBRARIES,
-  chaosIntensity: 50,
+  chaosIntensity: 0,
   chaosBorderWidth: 2,
   smartDarkContrast: 75,
   dimAmount: 30,
+  treeStructureEnabled: false,
+  petTerminalFilterMedia: true,
+  petTerminalNoGlow: false,
+  lcdFilterMedia: false,
   pauseVideosEnabled: false,
   disabledSites: [],
+  siteSettings: {},
 };
 
 chrome.runtime.onInstalled.addListener(({ reason }) => {

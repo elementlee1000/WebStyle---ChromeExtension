@@ -13,6 +13,10 @@
   const SHADOW_DARK_ID     = 'soe-shadow-dark';
   const SETTINGS_CACHE_KEY = 'soe_settings_cache';
 
+  /* ── 跳过谷歌翻译 iframe，避免 dark CSS 污染弹窗内容 ── */
+  const _SKIP_HOSTS = ['translate.googleapis.com', 'translate-pa.googleapis.com'];
+  if (_SKIP_HOSTS.some(h => location.hostname === h || location.hostname.endsWith('.' + h))) return;
+
   /* ── 零延迟背景预热：从 localStorage 同步读取上次配置，立即遮住白屏 ── */
   (function injectEarlyBg() {
     try {
@@ -41,6 +45,7 @@
   let bgMutTimer = null;
   let cssVarTimer = null;
   let dimObserver = null;
+  let kixSelObserver = null;
   let videoPauseObserver = null;
   let videoPauseEnabled = false;
   let nativeDarkDetected = false;
@@ -171,17 +176,21 @@
       const mutedCol = `rgb(${mutedV},${mutedV},${mutedV})`;
       const borderCol = `rgb(${borderV},${borderV},${borderV})`;
       const linkCol = `rgb(105,${linkG},255)`;
+      // 悬浮层选择器：这些元素及其子元素不参与 smart dark 转换
+      const _fNot = ['[role="tooltip"]','[role="menu"]','[popover]',
+        '#goog-gt-tt','.goog-te-bubble','.goog-te-balloon']
+        .flatMap(s => [`:not(${s})`,`:not(${s} *)`]).join('');
       css += `
 /* ── Smart Dark ── */
 :root { color-scheme: dark; }
 /* Strip bright page surfaces while preserving media. */
-*:not(img):not(video):not(iframe):not(canvas):not(embed):not(object):not(picture):not(svg):not(svg *) {
+*:not(img):not(video):not(iframe):not(canvas):not(embed):not(object):not(picture):not(svg):not(svg *)${_fNot} {
   background-color: transparent !important;
   border-color: ${borderCol} !important;
 }
 html, body { background-color: #1a1a1a !important; color: ${textCol} !important; }
 /* Override site-authored dark text. Contrast slider feeds these colors. */
-:where(body, body *):not(img):not(video):not(iframe):not(canvas):not(embed):not(object):not(picture):not(svg):not(svg *) {
+:where(body, body *):not(img):not(video):not(iframe):not(canvas):not(embed):not(object):not(picture):not(svg):not(svg *)${_fNot} {
   color: ${textCol} !important;
   caret-color: ${textCol} !important;
 }
@@ -249,6 +258,22 @@ small, .muted, [class*="muted"], [class*="secondary"], [class*="meta"],
 th { background-color: #252525 !important; }
 ::-webkit-scrollbar { background-color: #1a1a1a; }
 ::-webkit-scrollbar-thumb { background-color: #444; }
+/* ── 谷歌翻译悬浮气泡：中灰底色，保证可读性 ── */
+#goog-gt-tt, .goog-te-bubble, .goog-te-balloon {
+  background-color: #606060 !important;
+  border-color: #888 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.6) !important;
+}
+#goog-gt-tt *, .goog-te-bubble *, .goog-te-balloon * {
+  background-color: transparent !important;
+  color: #f0f0f0 !important;
+  border-color: #888 !important;
+}
+#goog-gt-tt a, .goog-te-bubble a, .goog-te-balloon a { color: #88ccff !important; }
+#goog-gt-tt select, .goog-te-bubble select {
+  background-color: #505050 !important;
+  color: #f0f0f0 !important;
+}
 `;
       // Google Docs / Slides：高优先级还原编辑区域，工具栏/菜单仍受干预
       if (location.hostname === 'docs.google.com') {
@@ -281,15 +306,31 @@ html body .punch-viewer-content *:not(img):not(video):not(canvas):not(svg):not(s
       const _invSel = _skipImgInv
         ? 'video, canvas, iframe, embed, object'
         : `${MEDIA_SELECTOR}, [style*="background-image"]`;
+      const selOpacity = (0.35 + 0.30 * (1 - pct / 100)).toFixed(2);
+      // 取消 inline-style 背景图容器内媒体子元素的双重补偿（CSS 无法感知祖先 filter 状态，JS 兜底处理 computed 情形）
+      const _cancelDoubleInv = _skipImgInv ? '' :
+        `[style*="background-image"] video,[style*="background-image"] canvas,` +
+        `[style*="background-image"] iframe,[style*="background-image"] embed,` +
+        `[style*="background-image"] img,[style*="background-image"] picture,` +
+        `[style*="background-image"] svg,[style*="background-image"] [style*="background-image"]` +
+        ` { filter: none !important; }`;
       css += `
 /* ── Dim ── */
 body { filter: brightness(${br}) !important; }
 ${_invSel} { filter: brightness(${brInv}) !important; }
+${_cancelDoubleInv}
+::selection { background-color: rgba(0,140,255,${selOpacity}) !important; color: inherit !important; }
 `;
       if (_googleEditSel) {
+        // kix-selection-overlay 受父元素 brInv 放大影响，淡蓝+白底会被推到白色饱和区变为不可见。
+        // 需要足够高的不透明度让 R/G 通道在 brInv 放大后仍保留色相。
+        const kixSelAlpha = Math.min(0.85, 0.55 + (parseFloat(brInv) - 1) * 0.35).toFixed(2);
         css += `/* ── Google Docs/Slides: 编辑区域不暗化 ── */
 ${_googleEditSel} { filter: brightness(${brInv}) !important; }
 ${_googleEditSel} ${MEDIA_SELECTOR} { filter: none !important; }
+.kix-selection-overlay,[class*="kix-selection-overlay"] {
+  background-color: rgba(26,115,232,${kixSelAlpha}) !important;
+}
 `;
       }
     }
@@ -494,6 +535,195 @@ body *:hover {
   background-color: transparent !important; /* 去除悬停时的背景色块 */
   outline: 1px dotted #888888 !important;
   outline-offset: -1px !important;
+}
+`;
+    }
+
+    if (s.gothicEnabled) {
+      css += `
+/* ===== ASCII GOTHIC CATHEDRAL ===== */
+:root {
+  color-scheme: dark !important;
+}
+
+html, body {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(151, 35, 55, .18), transparent 24rem),
+    radial-gradient(circle at 78% 18%, rgba(36, 78, 128, .22), transparent 26rem),
+    linear-gradient(180deg, #111114 0%, #1a1818 45%, #0d0d10 100%) !important;
+  color: #e9dfcb !important;
+  font-family: "Georgia", "Times New Roman", ui-serif, serif !important;
+  min-height: 100vh !important;
+}
+
+body {
+  padding-top: 116px !important;
+}
+
+body::before {
+  content: "            /\\\\\\\\                 /\\\\\\\\            " "\\A"
+           "           /^^^^\\\\\\\\               /^^^^\\\\\\\\           " "\\A"
+           "      /\\\\\\\\  | [] |  /\\\\\\\\     /\\\\\\\\  | [] |  /\\\\\\\\      " "\\A"
+           "     /^^\\\\\\\\ | [] | /^^\\\\\\\\   /^^\\\\\\\\ | [] | /^^\\\\\\\\     " "\\A"
+           "    /____\\\\\\\\|____|/____\\\\\\\\ /____\\\\\\\\|____|/____\\\\\\\\    " "\\A"
+           "        .-^-._.-^-._.- GOTHIC .-^-._.-^-._.       ";
+  position: fixed !important;
+  top: 10px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+  white-space: pre !important;
+  color: #d7c28a !important;
+  font: 700 12px/1.1 "Courier New", Consolas, monospace !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+  text-shadow: 0 0 10px rgba(215, 194, 138, .45), 0 2px 0 #000 !important;
+  opacity: .92 !important;
+}
+
+body::after {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  z-index: 2147483645 !important;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 2px, transparent 2px 18px) !important;
+  mix-blend-mode: screen !important;
+}
+
+*:not(img):not(video):not(canvas):not(iframe):not(embed):not(object):not(svg):not(svg *) {
+  border-color: rgba(210, 190, 140, .72) !important;
+  box-shadow: none !important;
+  text-shadow: 0 1px 0 #000 !important;
+}
+
+body, body *:not(img):not(video):not(canvas):not(iframe):not(embed):not(object):not(svg):not(svg *) {
+  color: #e9dfcb !important;
+}
+
+main, article, section, aside, header, footer, nav,
+[role="main"], [role="banner"], [role="contentinfo"], [role="navigation"],
+[class*="container" i], [class*="content" i], [class*="card" i], [class*="panel" i],
+[class*="sidebar" i], [class*="modal" i], [class*="dialog" i] {
+  position: relative !important;
+  border: 2px solid rgba(210, 190, 140, .78) !important;
+  border-top-width: 4px !important;
+  border-radius: 48% 48% 6px 6px / 42px 42px 6px 6px !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.06), transparent 28%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 12px),
+    rgba(24, 24, 28, .86) !important;
+  outline: 1px solid rgba(0, 0, 0, .75) !important;
+  outline-offset: -5px !important;
+}
+
+main::before, article::before, section::before, aside::before, header::before, footer::before, nav::before,
+[role="main"]::before, [role="banner"]::before, [role="contentinfo"]::before, [role="navigation"]::before,
+[class*="container" i]::before, [class*="content" i]::before, [class*="card" i]::before, [class*="panel" i]::before,
+[class*="sidebar" i]::before, [class*="modal" i]::before, [class*="dialog" i]::before {
+  content: "   /\\\\   " "\\A" "  /^^\\\\  " "\\A" " /_||_\\\\ " !important;
+  display: block !important;
+  white-space: pre !important;
+  color: #d7c28a !important;
+  font: 700 10px/1 "Courier New", Consolas, monospace !important;
+  text-align: center !important;
+  margin: -2px auto 4px !important;
+  opacity: .86 !important;
+}
+
+main::after, article::after, section::after, aside::after, nav::after,
+[class*="card" i]::after, [class*="panel" i]::after {
+  content: "(_/\\\\_)   (_/\\\\_)   (_/\\\\_)" !important;
+  display: block !important;
+  white-space: pre !important;
+  color: rgba(215, 194, 138, .76) !important;
+  font: 700 10px/1 "Courier New", Consolas, monospace !important;
+  text-align: center !important;
+  padding-top: 6px !important;
+  border-top: 1px dotted rgba(210, 190, 140, .55) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #f4d67a !important;
+  font-family: "Georgia", "Times New Roman", ui-serif, serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  border-bottom: 1px solid rgba(244, 214, 122, .48) !important;
+}
+
+h1::before, h2::before, h3::before {
+  content: "/\\\\  " !important;
+  color: #d7c28a !important;
+  font-family: "Courier New", Consolas, monospace !important;
+}
+
+h1::after, h2::after, h3::after {
+  content: "  /\\\\" !important;
+  color: #d7c28a !important;
+  font-family: "Courier New", Consolas, monospace !important;
+}
+
+a, a:visited {
+  color: #9fc5ff !important;
+  text-decoration: underline !important;
+  text-decoration-style: dotted !important;
+}
+
+button, input, textarea, select, [role="button"]:not(:has(button,[role="button"])) {
+  background: rgba(12, 12, 16, .92) !important;
+  color: #f2e7d0 !important;
+  border: 1px solid rgba(215, 194, 138, .75) !important;
+  border-radius: 999px 999px 4px 4px / 20px 20px 4px 4px !important;
+  font-family: "Georgia", "Times New Roman", ui-serif, serif !important;
+}
+
+button::before, [role="button"]:not(:has(button,[role="button"]))::before {
+  content: "{ " !important;
+  color: #d7c28a !important;
+}
+
+button::after, [role="button"]:not(:has(button,[role="button"]))::after {
+  content: " }" !important;
+  color: #d7c28a !important;
+}
+
+img, video, canvas, picture, svg, [style*="background-image"] {
+  border: 2px solid rgba(215, 194, 138, .82) !important;
+  border-radius: 50% 50% 4px 4px / 36px 36px 4px 4px !important;
+  filter: saturate(1.45) contrast(1.08) brightness(.82) !important;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.45), 0 0 16px rgba(91, 126, 192, .22) !important;
+}
+
+hr, [role="separator"] {
+  border: 0 !important;
+  border-top: 1px solid rgba(215, 194, 138, .72) !important;
+}
+
+hr::after, [role="separator"]::after {
+  content: "^  ^  ^  ^  ^" !important;
+  display: block !important;
+  color: #d7c28a !important;
+  text-align: center !important;
+  font: 700 10px/1 "Courier New", Consolas, monospace !important;
+}
+
+table, th, td, fieldset {
+  border: 1px solid rgba(215, 194, 138, .72) !important;
+  background: rgba(18, 18, 24, .76) !important;
+}
+
+pre, code, kbd, samp {
+  background: rgba(6, 8, 12, .92) !important;
+  color: #b9f0ff !important;
+  border: 1px dotted rgba(185, 240, 255, .65) !important;
+}
+
+::selection {
+  background: #d7c28a !important;
+  color: #111114 !important;
 }
 `;
     }
@@ -945,6 +1175,7 @@ ${mediaCss}
     if (SKIP_TAGS.has(el.tagName)) return false;
     if (isGoogleEditArea(el)) return false;
     if (isSvgPart(el) || isMediaSurface(el) || isMediaPlayerChrome(el)) return false;
+    if (el.closest('[role="tooltip"],[role="menu"],[popover],.goog-te-bubble,.goog-te-balloon,#goog-gt-tt')) return false;
     const cs = window.getComputedStyle(el);
     if (hasUrlBackground(cs.backgroundImage)) return false;
     if (/gradient/i.test(cs.backgroundImage)) return false;
@@ -1027,6 +1258,19 @@ ${mediaCss}
     // 图片类选择器：img/picture/svg，在 _skipImgInv 时不补偿
     const _IMG_SEL = 'img, picture, svg';
 
+    // 检测 kix 编辑区内的蓝色选区覆盖层并提升 alpha，使其在 brInv 放大后仍可见
+    function boostGdocsSelOverlay(el) {
+      const bg = el.style?.backgroundColor;
+      if (!bg) return;
+      const m = bg.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+))?\s*\)/);
+      if (!m) return;
+      const r = +m[1], g = +m[2], b = +m[3], a = m[4] !== undefined ? +m[4] : 1;
+      // 只处理蓝色系（B 明显大于 R）、且当前透明度不足以在 brInv 放大后存活的覆盖层
+      if (b <= 100 || r >= b * 0.6 || a >= 0.6) return;
+      const boosted = Math.min(0.85, Math.max(0.68, a * inv));
+      el.style.setProperty('background-color', `rgba(${r},${g},${b},${boosted.toFixed(2)})`, 'important');
+    }
+
     function applyInv(el) {
       // Google Docs/Slides 编辑区容器本身：施加逆滤镜使其恢复正常亮度
       if (_googleEditSel && el.matches?.(_googleEditSel)) {
@@ -1034,8 +1278,8 @@ ${mediaCss}
         el.setAttribute(DIM_ATTR, '1');
         return;
       }
-      // 编辑区内部所有元素：父级已补偿，跳过
-      if (isGoogleEditArea(el)) return;
+      // 编辑区内部：父级已补偿，只需检测并提升蓝色选区覆盖层
+      if (isGoogleEditArea(el)) { boostGdocsSelOverlay(el); return; }
 
       // 判断是否为媒体元素（标签 + computed background-image）
       const isTagMedia = el.matches?.(MEDIA_SELECTOR);
@@ -1047,6 +1291,14 @@ ${mediaCss}
 
       // IG / Google Images：img/picture/svg 及 background-image 容器随 body 暗化，不补偿
       if (_skipImgInv && (isBgMedia || el.matches?.(_IMG_SEL))) return;
+
+      // 若祖先已施加逆滤镜（DIM_ATTR='1'），叠加会双重补偿致过亮（B站视频等）。
+      // 显式设 filter:none 以抵消 CSS brightness(invStr) 规则，使有效亮度保持 1.0x。
+      if (el.parentElement?.closest?.(`[${DIM_ATTR}="1"]`)) {
+        el.style.setProperty('filter', 'none', 'important');
+        el.setAttribute(DIM_ATTR, '0');
+        return;
+      }
 
       el.style.setProperty('filter', invStr, 'important');
       el.setAttribute(DIM_ATTR, '1');
@@ -1065,9 +1317,33 @@ ${mediaCss}
       }
     });
     dimObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+    // Google Docs：单独监听 kix 编辑区内的 style 属性变化，动态修正选区覆盖层
+    if (_googleEditSel) {
+      const kixRoot = document.querySelector(_googleEditSel);
+      if (kixRoot) {
+        kixSelObserver = new MutationObserver(mutations => {
+          for (const m of mutations) {
+            if (m.type === 'attributes') boostGdocsSelOverlay(m.target);
+            if (m.type === 'childList') {
+              for (const node of m.addedNodes) {
+                if (node.nodeType === 1) {
+                  boostGdocsSelOverlay(node);
+                  node.querySelectorAll('*').forEach(boostGdocsSelOverlay);
+                }
+              }
+            }
+          }
+        });
+        kixSelObserver.observe(kixRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+        // 处理页面已存在的覆盖层
+        kixRoot.querySelectorAll('*').forEach(boostGdocsSelOverlay);
+      }
+    }
   }
 
   function clearDimJS() {
+    if (kixSelObserver) { kixSelObserver.disconnect(); kixSelObserver = null; }
     if (dimObserver) { dimObserver.disconnect(); dimObserver = null; }
     document.querySelectorAll(`[${DIM_ATTR}]`).forEach(el => {
       el.style.removeProperty('filter');
@@ -1793,6 +2069,14 @@ hr::after, [role="separator"]::after {
       if (styleEl) styleEl.disabled = true;
       if (varsEl) varsEl.disabled = true;
 
+      // 同时清除 BgJS 在关键容器上的 inline background，防止误读自身注入的暗色
+      const _chkNodes = [html, body,
+        document.getElementById('root'), document.getElementById('app'),
+        document.querySelector('main'), body.firstElementChild
+      ].filter(n => n?.hasAttribute?.(BG_ATTR));
+      const _savedBgs = _chkNodes.map(n => [n, n.style.getPropertyValue('background-color')]);
+      _chkNodes.forEach(n => n.style.removeProperty('background-color'));
+
       // 强制同步重排，确保获取到未被我们 CSS 覆盖的真实计算样式
       void body.offsetHeight;
 
@@ -1851,6 +2135,7 @@ hr::after, [role="separator"]::after {
       }
 
       // 极速恢复样式（由于是同步 JS 进程，肉眼完全无法察觉禁用与恢复）
+      if (!nativeDarkDetected) _savedBgs.forEach(([n, v]) => v && n.style.setProperty('background-color', v, 'important'));
       if (styleEl) styleEl.disabled = wasStyleDisabled;
       if (varsEl) varsEl.disabled = wasVarsDisabled;
     }

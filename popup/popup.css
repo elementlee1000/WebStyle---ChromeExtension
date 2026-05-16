@@ -342,3 +342,315 @@ footer {
   display: block;
   height: 16px;
 }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* GOOGLE AESTHETIC THEME                                       */
+/* 在 popup.js 顶部将 THEME 改为 'google' 即可启用             */
+/* ═══════════════════════════════════════════════════════════ */
+
+/* 弹窗整体圆角
+   原理：body 加 padding，弹窗窗口比 .app 稍大，
+   .app 的圆角露出 body 的深色背景，圆角才真正可见 */
+html:has(body.theme-google) { background: #111; }
+
+body.theme-google {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 13px;
+  color: #1c1c1e;
+  background: #111;
+  border: none;
+  box-shadow: none; /* 消除 Win98 inset 白色高光线 */
+  overflow: visible;
+  padding: 6px;
+}
+
+body.theme-google .app {
+  background: #c0c0c0;
+  border-radius: 18px;
+  overflow: hidden;
+  /* outline 跟随 border-radius 描出圆角轮廓，使深色标题区的圆角也可见 */
+  outline: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 4px 28px rgba(0,0,0,0.5);
+}
+
+/* 标题栏：底部渐变到透明 + ::after 模糊扩散，双层消除硬线 */
+body.theme-google header {
+  background: linear-gradient(180deg, #111 45%, rgba(17,17,17,0) 100%);
+  padding: 10px 14px 26px;
+  border: none;
+  position: relative;
+  overflow: visible;
+  z-index: 2;
+}
+
+/* ::after 在透明底部再叠一层模糊扩散，让过渡更柔和 */
+body.theme-google header::after {
+  content: '';
+  position: absolute;
+  left: -2px; right: -2px;
+  top: 0; bottom: -14px;
+  background: #111;
+  filter: blur(14px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 确保标题内容在模糊层之上 */
+body.theme-google .header-left,
+body.theme-google .header-enable { position: relative; z-index: 1; }
+
+body.theme-google .header-enable {
+  border: none;
+  border-radius: 16px;
+  padding: 2px 10px;
+  background: rgba(255,255,255,0.06);
+  font-size: 12px;
+}
+
+/* .body 顶部也渐变起步，接住上方的透明区域 */
+body.theme-google .body {
+  background: linear-gradient(180deg, rgba(192,192,192,0) 0px, #c0c0c0 28px);
+  padding: 10px 10px 10px;
+}
+
+body.theme-google section {
+  border: none;
+  box-shadow: none;
+  padding: 8px 8px 14px;
+  margin-bottom: 4px;
+}
+
+body.theme-google section:last-child { padding-bottom: 8px; }
+
+body.theme-google .section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+/* ── Checkboxes & Radios ─────────────────── */
+body.theme-google input[type=checkbox],
+body.theme-google input[type=radio] {
+  border: none;
+  box-shadow: none;
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
+}
+
+body.theme-google input[type=radio] { border-radius: 50%; }
+
+/* 复选框选中：box-shadow 多层模拟软边缘，元素本身不模糊，对号保持锐利 */
+body.theme-google input[type=checkbox]:checked {
+  background: #111;
+  border: none;
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0.32),
+    0 0 5px 3px rgba(0,0,0,0.18),
+    0 0 11px 5px rgba(0,0,0,0.08);
+}
+
+/* 对号：纯白，居中 */
+body.theme-google input[type=checkbox]:checked::after {
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 9px;
+  transform: translate(-50%, -60%) rotate(45deg);
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+}
+
+/* 单选圆选中：保持模糊效果 */
+body.theme-google input[type=radio]:checked {
+  background: #111;
+  border: none;
+  box-shadow: none;
+  filter: blur(1.2px);
+}
+
+body.theme-google input[type=radio]:checked::after {
+  background: #fff;
+  top: 3px; left: 3px;
+  width: 6px; height: 6px;
+}
+
+/* ── Radio group → pill buttons ──────────── */
+body.theme-google .radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 2px;
+}
+
+body.theme-google .radio-option {
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.07);
+  border: none;
+  font-size: 12px;
+  gap: 0;
+  position: relative;
+  isolation: isolate;
+}
+
+body.theme-google .radio-option input[type=radio] { display: none; }
+
+body.theme-google .radio-option:has(input:checked) {
+  background: transparent;
+  color: #d0d0d0;
+}
+
+body.theme-google .radio-option:has(input:checked)::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: #111;
+  border-radius: 24px;
+  filter: blur(4px);
+  z-index: -1;
+}
+
+/* ── Library items ───────────────────────── */
+body.theme-google .library-list {
+  gap: 5px;
+  padding: 6px 2px;
+}
+
+body.theme-google .lib-item {
+  border-radius: 12px;
+  padding: 7px 10px;
+  background: rgba(0,0,0,0.06);
+  border: none;
+  position: relative;
+  isolation: isolate;
+}
+
+body.theme-google .lib-item:has(.lib-toggle:checked) { background: transparent; }
+
+body.theme-google .lib-item:has(.lib-toggle:checked)::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: #0d0d0d;
+  border-radius: 14px;
+  filter: blur(5px);
+  z-index: -1;
+}
+
+body.theme-google .lib-item:has(.lib-toggle:checked) .lib-name { color: #e2e2e2; }
+body.theme-google .lib-item:has(.lib-toggle:checked) .lib-desc { color: #888; }
+body.theme-google .lib-item:has(.lib-toggle:checked) .lib-toggle { opacity: 0; }
+
+body.theme-google .lib-name { font-size: 12px; font-weight: 600; }
+body.theme-google .lib-desc { font-size: 11px; color: #555; }
+
+body.theme-google .lib-delete {
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: none;
+  box-shadow: none;
+  background: rgba(0,0,0,0.08);
+  font-size: 11px;
+}
+
+body.theme-google .lib-delete:active { background: rgba(0,0,0,0.16); }
+
+/* ── Buttons ─────────────────────────────── */
+body.theme-google .btn-primary,
+body.theme-google .btn-ghost {
+  border-radius: 20px;
+  border: none;
+  box-shadow: none;
+  background: rgba(0,0,0,0.07);
+  font-size: 12px;
+  padding: 5px 14px;
+}
+
+body.theme-google .btn-primary {
+  background: transparent;
+  color: #d8d8d8;
+  border: none;
+  position: relative;
+  isolation: isolate;
+}
+
+body.theme-google .btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: #111;
+  border-radius: 24px;
+  filter: blur(3.5px);
+  z-index: -1;
+}
+
+body.theme-google .btn-primary:active,
+body.theme-google .btn-ghost:active {
+  filter: none;
+  box-shadow: none;
+  padding-top: 5px; padding-left: 14px;
+  background: rgba(0,0,0,0.13);
+}
+
+body.theme-google .add-btn {
+  border-radius: 20px;
+  border: none;
+  box-shadow: none;
+  background: rgba(0,0,0,0.05);
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+body.theme-google .add-btn:active { background: rgba(0,0,0,0.1); }
+
+/* ── Text inputs ─────────────────────────── */
+body.theme-google .font-field input[type=text],
+body.theme-google .add-form input,
+body.theme-google .css-editor {
+  border-radius: 8px;
+  border: none;
+  box-shadow: none;
+  background: rgba(255,255,255,0.75);
+  color: #1c1c1e;
+}
+
+body.theme-google .font-field input[type=text]:disabled { background: rgba(0,0,0,0.05); }
+
+body.theme-google .color-field input[type=color] {
+  border-radius: 6px;
+  border: none;
+  box-shadow: none;
+}
+
+body.theme-google .size-field input[type=range] { accent-color: #000; }
+
+body.theme-google .hex-label {
+  font-size: 12px;
+  color: #333;
+  font-family: 'SF Mono', 'Courier New', monospace;
+}
+
+body.theme-google .action-status { color: #333; }
+body.theme-google .action-status.site-active { color: #000; font-weight: 600; }
+
+/* ── Footer ──────────────────────────────── */
+body.theme-google footer {
+  border: none;
+  background: rgba(0,0,0,0.03);
+}
+
+/* ── Scrollbar ───────────────────────────── */
+body.theme-google .body::-webkit-scrollbar { width: 5px; }
+body.theme-google .body::-webkit-scrollbar-track { background: transparent; border: none; }
+body.theme-google .body::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.22);
+  border-radius: 3px;
+  border: none;
+  box-shadow: none;
+}
+body.theme-google .body::-webkit-scrollbar-button:single-button { display: none; height: 0; }

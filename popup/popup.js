@@ -1,3 +1,9 @@
+// ── UI Theme ─────────────────────────────────────────────────
+// 'win98'  →  Windows 98 经典风格 (默认)
+// 'google' →  现代圆角 Google 美学
+//const THEME = 'win98';
+const THEME = 'google';
+
 const DEFAULT_LIBRARIES = [
   { id: '98-css',   name: 'win98',      url: '',                                                          enabled: false, builtin: true, description: 'Windows 98' },
   { id: 'pet-terminal', name: 'PET Terminal', url: '',                                                     enabled: false, builtin: true,  },
@@ -26,6 +32,7 @@ const DEFAULTS = {
   dimAmount: 30,
   pageFlipEnabled: false,
   treeStructureEnabled: false,
+  gothicEnabled: false,
   petTerminalFilterMedia: true,
   petTerminalNoGlow: false,
   lcdFilterMedia: false,
@@ -41,7 +48,7 @@ const SITE_KEYS = new Set([
   'fontFamilyEnabled','fontFamily','fontSizeEnabled','fontSize',
   'globalRadiusEnabled','globalRadius',
   'customCSS','chaosIntensity',
-  'pageFlipEnabled','treeStructureEnabled',
+  'pageFlipEnabled','treeStructureEnabled','gothicEnabled',
   'petTerminalFilterMedia','petTerminalNoGlow','lcdFilterMedia',
   'pauseVideosEnabled',
   'cssLibraries',
@@ -275,6 +282,9 @@ function applyStateToUI() {
   const tsToggle = $('treeStructureEnabled');
   if (tsToggle) tsToggle.checked = eff.treeStructureEnabled;
 
+  const gothicToggle = $('gothicEnabled');
+  if (gothicToggle) gothicToggle.checked = eff.gothicEnabled;
+
   $('petTerminalFilterMedia').checked = eff.petTerminalFilterMedia !== false;
   $('petTerminalNoGlow').checked = eff.petTerminalNoGlow === true;
   $('lcdFilterMedia').checked = eff.lcdFilterMedia === true;
@@ -505,6 +515,13 @@ function bindEvents() {
     });
   }
 
+  const gothicToggle = $('gothicEnabled');
+  if (gothicToggle) {
+    gothicToggle.addEventListener('change', e => {
+      saveNow({ gothicEnabled: e.target.checked });
+    });
+  }
+
   /* Reset */
   $('reset-btn').addEventListener('click', () => {
     if (!confirm('Reset all settings to defaults?')) return;
@@ -518,6 +535,7 @@ function bindEvents() {
 /* ── Init ────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', async () => {
+  document.body.classList.add('theme-' + THEME);
   [state, currentSite] = await Promise.all([loadSettings(), loadCurrentSite()]);
   siteOnlyActive = !!(currentSite && state.siteSettings?.[currentSite]);
   applyStateToUI();

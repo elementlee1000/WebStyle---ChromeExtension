@@ -87,6 +87,7 @@ const DEFAULTS = {
   smartDarkContrast: 75,
   dimAmount: 30,
   treeStructureEnabled: false,
+  gothicEnabled: false,
   petTerminalFilterMedia: true,
   petTerminalNoGlow: false,
   lcdFilterMedia: false,

@@ -9,7 +9,11 @@
       "WebSearch",
       "WebFetch(domain:darkreader.org)",
       "Bash(Get-ChildItem -Path \"c:\\\\EL_Drive\\\\0EL\\\\AI\\\\VibeCoding\\\\WebTheme - ChromeExtension\" -Recurse -File)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Select-Object -Property FullName, Length)",
+      "Read(//c/EL_Drive/0EL/AI/VibeCoding/**)",
+      "Bash(pip install *)",
+      "Bash(python -c ' *)"
     ]
   }
 }
